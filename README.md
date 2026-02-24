@@ -85,3 +85,15 @@ Production-ready MVP foundation for a centralized, online-first inventory platfo
 - Offline sync endpoint with per-event status responses
 - BullMQ-based async reporting jobs
 - JWT auth with refresh tokens, RBAC, location scoping, and audit logs
+
+## GitHub Branch Protection (Main)
+
+In GitHub repo settings, configure a branch protection rule for `main`:
+
+- Require a pull request before merging
+- Require approvals: `1`
+- Require status checks to pass before merging:
+  - `Lint, Build, Test`
+- Require branches to be up to date before merging
+- Restrict force pushes
+- Do not allow deletions
