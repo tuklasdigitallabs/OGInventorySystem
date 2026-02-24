@@ -1,0 +1,10 @@
+{
+  "name": "One Gourmet PH Inventory",
+  "short_name": "OG Inventory",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eef1e6",
+  "theme_color": "#2e3318",
+  "icons": []
+}
+

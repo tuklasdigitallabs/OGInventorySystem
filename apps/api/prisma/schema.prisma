@@ -1,0 +1,404 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum LedgerReferenceType {
+  RECEIVE
+  TRANSFER_OUT
+  TRANSFER_IN
+  WASTAGE
+  STOCK_COUNT
+  ADJUSTMENT
+  ISSUE_TO_OPS
+  SALE_CONSUMPTION
+}
+
+enum TransferStatus {
+  DRAFT
+  DISPATCHED
+  RECEIVED
+  CANCELLED
+}
+
+enum CountStatus {
+  DRAFT
+  SUBMITTED
+  LOCKED
+  APPROVED
+}
+
+enum ReportStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id             String               @id @default(uuid())
+  email          String               @unique
+  passwordHash   String
+  fullName       String
+  status         UserStatus           @default(ACTIVE)
+  refreshToken   String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  roles          UserRole[]
+  locationAccess UserLocationAccess[]
+  createdEvents  LedgerEvent[]        @relation("createdByUser")
+  approvedEvents LedgerEvent[]        @relation("approvedByUser")
+  auditLogs      AuditLog[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String          @id @default(uuid())
+  name        String          @unique
+  description String?
+  createdAt   DateTime        @default(now())
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  description String?
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Location {
+  id          String               @id @default(uuid())
+  code        String               @unique
+  name        String
+  isActive    Boolean              @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  access      UserLocationAccess[]
+  ledger      LedgerEvent[]
+  purchases   PurchaseOrder[]      @relation("purchaseLocation")
+  transferOut Transfer[]           @relation("transferFromLocation")
+  transferIn  Transfer[]           @relation("transferToLocation")
+  itemCosts   ItemLocationCost[]
+}
+
+model UserLocationAccess {
+  userId     String
+  locationId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, locationId])
+  @@map("user_location_access")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items     Item[]
+}
+
+model Uom {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items     Item[]
+  fromConversions UomConversion[] @relation("fromUom")
+  toConversions   UomConversion[] @relation("toUom")
+}
+
+model UomConversion {
+  id           String   @id @default(uuid())
+  fromUomId    String
+  toUomId      String
+  factor       Decimal  @db.Decimal(18, 6)
+  createdAt    DateTime @default(now())
+  fromUom      Uom      @relation("fromUom", fields: [fromUomId], references: [id], onDelete: Restrict)
+  toUom        Uom      @relation("toUom", fields: [toUomId], references: [id], onDelete: Restrict)
+
+  @@unique([fromUomId, toUomId])
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  contact   String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  po        PurchaseOrder[]
+}
+
+model Item {
+  id            String             @id @default(uuid())
+  sku           String             @unique
+  name          String
+  categoryId    String
+  baseUomId     String
+  isFood        Boolean            @default(true)
+  lowStockLevel Decimal?           @db.Decimal(18, 4)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  category      Category           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  baseUom       Uom                @relation(fields: [baseUomId], references: [id], onDelete: Restrict)
+  costs         ItemLocationCost[]
+  ledger        LedgerEvent[]
+  poLines       PurchaseOrderLine[]
+  transferLines TransferLine[]
+  recipeLines   RecipeLine[]
+}
+
+model ItemLocationCost {
+  itemId       String
+  locationId   String
+  averageCost  Decimal  @db.Decimal(18, 6)
+  updatedAt    DateTime @updatedAt
+  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  location     Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, locationId])
+}
+
+model PurchaseOrder {
+  id          String              @id @default(uuid())
+  poNumber    String              @unique
+  supplierId  String
+  locationId  String
+  status      String              @default("OPEN")
+  businessDate DateTime
+  createdBy   String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  supplier    Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  location    Location            @relation("purchaseLocation", fields: [locationId], references: [id], onDelete: Restrict)
+  lines       PurchaseOrderLine[]
+}
+
+model PurchaseOrderLine {
+  id              String         @id @default(uuid())
+  purchaseOrderId String
+  itemId          String
+  orderedQty      Decimal        @db.Decimal(18, 4)
+  receivedQty     Decimal        @default(0) @db.Decimal(18, 4)
+  unitCost        Decimal        @db.Decimal(18, 6)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  item            Item           @relation(fields: [itemId], references: [id], onDelete: Restrict)
+}
+
+model Transfer {
+  id             String         @id @default(uuid())
+  transferNumber String         @unique
+  fromLocationId String
+  toLocationId   String
+  status         TransferStatus @default(DRAFT)
+  businessDate   DateTime
+  createdBy      String
+  dispatchedBy   String?
+  receivedBy     String?
+  dispatchedAt   DateTime?
+  receivedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  fromLocation   Location       @relation("transferFromLocation", fields: [fromLocationId], references: [id], onDelete: Restrict)
+  toLocation     Location       @relation("transferToLocation", fields: [toLocationId], references: [id], onDelete: Restrict)
+  lines          TransferLine[]
+
+  @@map("transfers")
+}
+
+model TransferLine {
+  id              String    @id @default(uuid())
+  transferId      String
+  itemId          String
+  qty             Decimal   @db.Decimal(18, 4)
+  receivedQty     Decimal?  @db.Decimal(18, 4)
+  unitCostAtDispatch Decimal @db.Decimal(18, 6)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  transfer        Transfer  @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  item            Item      @relation(fields: [itemId], references: [id], onDelete: Restrict)
+}
+
+model Count {
+  id           String      @id @default(uuid())
+  locationId   String
+  businessDate DateTime
+  status       CountStatus @default(DRAFT)
+  submittedBy  String
+  approvedBy   String?
+  submittedAt  DateTime?
+  lockedAt     DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  lines        CountLine[]
+
+  @@map("counts")
+}
+
+model CountLine {
+  id         String   @id @default(uuid())
+  countId    String
+  itemId     String
+  systemQty  Decimal  @db.Decimal(18, 4)
+  countedQty Decimal  @db.Decimal(18, 4)
+  reasonCode String?
+  count      Count    @relation(fields: [countId], references: [id], onDelete: Cascade)
+}
+
+model Wastage {
+  id           String   @id @default(uuid())
+  locationId   String
+  itemId       String
+  qty          Decimal  @db.Decimal(18, 4)
+  reasonCode   String
+  businessDate DateTime
+  createdBy    String
+  createdAt    DateTime @default(now())
+
+  @@map("wastage")
+}
+
+model SalesBatch {
+  id           String            @id @default(uuid())
+  locationId   String
+  businessDate DateTime
+  source       String
+  externalRef  String?
+  createdBy    String
+  createdAt    DateTime          @default(now())
+  lines        SalesBatchLine[]
+
+  @@map("sales_batches")
+}
+
+model SalesBatchLine {
+  id           String      @id @default(uuid())
+  salesBatchId String
+  recipeId     String
+  qtySold      Decimal     @db.Decimal(18, 4)
+  salesBatch   SalesBatch  @relation(fields: [salesBatchId], references: [id], onDelete: Cascade)
+  recipe       Recipe      @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+}
+
+model Recipe {
+  id        String       @id @default(uuid())
+  code      String       @unique
+  name      String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  lines     RecipeLine[]
+  salesBatchLines SalesBatchLine[]
+}
+
+model RecipeLine {
+  id             String   @id @default(uuid())
+  recipeId       String
+  ingredientItemId String
+  qtyPerSale     Decimal  @db.Decimal(18, 6)
+  recipe         Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredientItem Item     @relation(fields: [ingredientItemId], references: [id], onDelete: Restrict)
+}
+
+model ReasonCode {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  label     String
+  type      String
+  createdAt DateTime @default(now())
+}
+
+model LedgerEvent {
+  id             String              @id
+  locationId     String
+  itemId         String
+  qtyIn          Decimal             @default(0) @db.Decimal(18, 4)
+  qtyOut         Decimal             @default(0) @db.Decimal(18, 4)
+  unitCostAtTime Decimal             @db.Decimal(18, 6)
+  extendedCost   Decimal             @db.Decimal(18, 6)
+  referenceType  LedgerReferenceType
+  referenceId    String
+  createdBy      String
+  approvedBy     String?
+  businessDate   DateTime
+  createdAt      DateTime            @default(now())
+  location       Location            @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  item           Item                @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  creator        User                @relation("createdByUser", fields: [createdBy], references: [id], onDelete: Restrict)
+  approver       User?               @relation("approvedByUser", fields: [approvedBy], references: [id], onDelete: Restrict)
+
+  @@index([locationId, itemId, businessDate, createdAt])
+  @@index([referenceType, referenceId])
+  @@map("ledger_events")
+}
+
+model ReportRun {
+  id           String       @id @default(uuid())
+  reportType   String
+  requestedBy  String
+  filtersJson  Json
+  status       ReportStatus @default(QUEUED)
+  outputPath   String?
+  errorMessage String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@map("report_runs")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}
