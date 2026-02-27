@@ -1,0 +1,63 @@
+name: CD Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy To VPS
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    environment:
+      name: production
+
+    steps:
+      - name: Start SSH Agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Add Host Key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${{ secrets.VPS_PORT }}" -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy On VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
+            set -euo pipefail
+            cd /opt/og-inventory
+
+            git fetch origin main
+            git checkout main
+            git pull --ff-only origin main
+
+            docker compose --env-file .env.prod.compose -f docker-compose.prod.yml up --build -d
+
+            # Temporary migration compatibility:
+            # use migrate deploy if migrations exist; otherwise push schema directly.
+            docker compose --env-file .env.prod.compose -f docker-compose.prod.yml exec -T api sh -lc '
+              set -e
+              if [ -d prisma/migrations ] && [ "$(ls -A prisma/migrations 2>/dev/null)" ]; then
+                npx prisma migrate deploy
+              else
+                npx prisma db push --accept-data-loss
+              fi
+            '
+
+            docker compose --env-file .env.prod.compose -f docker-compose.prod.yml exec -T api sh -lc "npm run prisma:seed"
+
+            curl -fsS http://localhost/api/auth/login \
+              -H "Content-Type: application/json" \
+              -d "{\"email\":\"admin@onegourmet.ph\",\"password\":\"ChangeMe123!\"}" > /dev/null
+          EOF
