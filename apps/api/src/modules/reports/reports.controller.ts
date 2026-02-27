@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
+import { AccountStateGuard } from "../../common/guards/account-state.guard";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { AuthUser } from "../../common/types/auth-user.type";
@@ -8,7 +9,7 @@ import { RequestReportDto } from "./dto/request-report.dto";
 import { ReportsService } from "./reports.service";
 
 @Controller("reports")
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, AccountStateGuard)
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
@@ -29,4 +30,3 @@ export class ReportsController {
     return this.reportsService.getStatus(id);
   }
 }
-

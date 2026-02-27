@@ -2,6 +2,7 @@ import { Body, Controller, Param, Post, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
 import { LocationAccessGuard } from "../../common/guards/location-access.guard";
+import { AccountStateGuard } from "../../common/guards/account-state.guard";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { AuthUser } from "../../common/types/auth-user.type";
@@ -11,7 +12,7 @@ import { CreateCountDto } from "./dto/create-count.dto";
 import { IssueToOpsDto } from "./dto/issue-to-ops.dto";
 
 @Controller("inventory/branch-ops")
-@UseGuards(JwtAuthGuard, PermissionsGuard, LocationAccessGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, LocationAccessGuard, AccountStateGuard)
 export class BranchOpsController {
   constructor(private readonly branchOpsService: BranchOpsService) {}
 
@@ -47,4 +48,3 @@ export class BranchOpsController {
     return this.branchOpsService.issueToOperations(dto, user);
   }
 }
-

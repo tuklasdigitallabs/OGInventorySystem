@@ -2,6 +2,7 @@ import { Body, Controller, Param, Post, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
 import { LocationAccessGuard } from "../../common/guards/location-access.guard";
+import { AccountStateGuard } from "../../common/guards/account-state.guard";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { AuthUser } from "../../common/types/auth-user.type";
@@ -10,7 +11,7 @@ import { ReceiveTransferDto } from "./dto/receive-transfer.dto";
 import { TransfersService } from "./transfers.service";
 
 @Controller("inventory/transfers")
-@UseGuards(JwtAuthGuard, PermissionsGuard, LocationAccessGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, LocationAccessGuard, AccountStateGuard)
 export class TransfersController {
   constructor(private readonly transfersService: TransfersService) {}
 
@@ -38,4 +39,3 @@ export class TransfersController {
     return { id: result.id, status: result.status, varianceCount: result.varianceCount };
   }
 }
-

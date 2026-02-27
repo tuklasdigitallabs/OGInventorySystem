@@ -7,11 +7,11 @@ import { TransfersService } from "./transfers.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
 import { LocationAccessGuard } from "../../common/guards/location-access.guard";
+import { AccountStateGuard } from "../../common/guards/account-state.guard";
 
 @Module({
   imports: [JwtModule.register({}), LedgerModule, AuditModule],
   controllers: [TransfersController],
-  providers: [TransfersService, JwtAuthGuard, PermissionsGuard, LocationAccessGuard]
+  providers: [TransfersService, JwtAuthGuard, PermissionsGuard, LocationAccessGuard, AccountStateGuard]
 })
 export class TransfersModule {}
-

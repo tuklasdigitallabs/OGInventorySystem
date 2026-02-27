@@ -7,11 +7,11 @@ import { ReportsProcessor } from "./reports.processor";
 import { AuditModule } from "../audit/audit.module";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
+import { AccountStateGuard } from "../../common/guards/account-state.guard";
 
 @Module({
   imports: [JwtModule.register({}), AuditModule, BullModule.registerQueue({ name: REPORTS_QUEUE })],
   controllers: [ReportsController],
-  providers: [ReportsService, ReportsProcessor, JwtAuthGuard, PermissionsGuard]
+  providers: [ReportsService, ReportsProcessor, JwtAuthGuard, PermissionsGuard, AccountStateGuard]
 })
 export class ReportsModule {}
-

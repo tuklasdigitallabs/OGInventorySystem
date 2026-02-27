@@ -23,7 +23,9 @@ const rolePermissions = {
     "SALES_BATCH_CREATE",
     "REPORT_RUN",
     "SYNC_BATCH",
-    "INVENTORY_READ"
+    "INVENTORY_READ",
+    "ACCOUNT_CONTROL_READ",
+    "ACCOUNT_CONTROL_WRITE"
   ],
   "Warehouse Manager": ["PO_CREATE", "PO_RECEIVE", "TRANSFER_CREATE", "TRANSFER_DISPATCH", "LEDGER_READ", "INVENTORY_READ"],
   Purchasing: ["PO_CREATE", "PO_RECEIVE", "LEDGER_READ", "INVENTORY_READ"],
@@ -95,6 +97,15 @@ async function main() {
     update: {},
     create: { userId: admin.id, locationId: defaultLocation.id }
   });
+
+  await prisma.accountControl.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      state: "ACTIVE"
+    }
+  });
 }
 
 main()
@@ -105,4 +116,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

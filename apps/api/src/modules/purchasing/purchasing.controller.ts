@@ -3,6 +3,7 @@ import { PurchasingService } from "./purchasing.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
 import { LocationAccessGuard } from "../../common/guards/location-access.guard";
+import { AccountStateGuard } from "../../common/guards/account-state.guard";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { AuthUser } from "../../common/types/auth-user.type";
@@ -10,7 +11,7 @@ import { CreatePoDto } from "./dto/create-po.dto";
 import { ReceivePoDto } from "./dto/receive-po.dto";
 
 @Controller("inventory")
-@UseGuards(JwtAuthGuard, PermissionsGuard, LocationAccessGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, LocationAccessGuard, AccountStateGuard)
 export class PurchasingController {
   constructor(private readonly purchasingService: PurchasingService) {}
 
@@ -30,4 +31,3 @@ export class PurchasingController {
     return this.purchasingService.receivePo(id, dto, user);
   }
 }
-

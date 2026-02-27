@@ -44,6 +44,12 @@ enum ReportStatus {
   FAILED
 }
 
+enum AccountState {
+  ACTIVE
+  GRACE_PERIOD
+  SUSPENDED
+}
+
 model User {
   id             String               @id @default(uuid())
   email          String               @unique
@@ -401,4 +407,14 @@ model AuditLog {
   @@index([entityType, entityId, createdAt])
   @@index([userId, createdAt])
   @@map("audit_logs")
+}
+
+model AccountControl {
+  id               Int          @id
+  state            AccountState @default(ACTIVE)
+  suspensionReason String?
+  updatedBy        String?
+  updatedAt        DateTime     @updatedAt
+
+  @@map("account_controls")
 }
