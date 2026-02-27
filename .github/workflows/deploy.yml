@@ -51,16 +51,7 @@ jobs:
 
             docker compose --env-file .env.prod.compose -f docker-compose.prod.yml up --build -d
 
-            # Temporary migration compatibility:
-            # use migrate deploy if migrations exist; otherwise push schema directly.
-            docker compose --env-file .env.prod.compose -f docker-compose.prod.yml exec -T api sh -lc '
-              set -e
-              if [ -d prisma/migrations ] && [ "$(ls -A prisma/migrations 2>/dev/null)" ]; then
-                npx prisma migrate deploy
-              else
-                npx prisma db push --accept-data-loss
-              fi
-            '
+            docker compose --env-file .env.prod.compose -f docker-compose.prod.yml exec -T api sh -lc "npx prisma migrate deploy"
 
             docker compose --env-file .env.prod.compose -f docker-compose.prod.yml exec -T api sh -lc "npm run prisma:seed"
 
