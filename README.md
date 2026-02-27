@@ -64,6 +64,13 @@ Production-ready MVP foundation for a centralized, online-first inventory platfo
 2. Add cron entry:
    - `crontab -e`
    - `15 2 * * * BACKUP_DIR=/var/backups/og-inventory /usr/local/bin/backup-og-postgres.sh >> /var/log/og-backup.log 2>&1`
+3. Validate restores regularly:
+   - `install -m 755 infra/scripts/restore-test-postgres.sh /usr/local/bin/restore-test-og-postgres.sh`
+   - `BACKUP_DIR=/var/backups/og-inventory /usr/local/bin/restore-test-og-postgres.sh`
+
+## Operations Runbook
+
+- See `RUNBOOK.md` for domain cutover, deploy, rollback, backup restore test, and incident checks.
 
 ## Security And Tests
 
