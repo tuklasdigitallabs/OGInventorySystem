@@ -43,6 +43,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p "$PORT" "$VPS_USER@$VPS_HOST" << 'EOF'
             set -euo pipefail
             cd /opt/og-inventory
+            git config --global --add safe.directory /opt/og-inventory
 
             git fetch origin main
             git checkout main
