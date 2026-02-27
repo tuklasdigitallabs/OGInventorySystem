@@ -1,4 +1,5 @@
 import { OfflineDemo } from "../components/offline-demo";
+import { AccountControlPanel } from "../components/account-control-panel";
 import type { ReactNode } from "react";
 
 const modules = [
@@ -34,6 +35,7 @@ export default function HomePage(): ReactNode {
         </div>
       </section>
 
+      <AccountControlPanel />
       <OfflineDemo />
     </main>
   );
