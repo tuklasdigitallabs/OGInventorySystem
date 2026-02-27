@@ -13,6 +13,7 @@ type AccountControlPayload = {
 };
 
 export function AccountControlPanel(): ReactNode {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
   const [token, setToken] = useState("");
   const [state, setState] = useState<AccountState>("ACTIVE");
   const [reason, setReason] = useState("");
@@ -23,7 +24,7 @@ export function AccountControlPanel(): ReactNode {
     setLoading(true);
     setResult("Loading account control...");
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/account-control`, {
+      const response = await fetch(`${apiBaseUrl}/admin/account-control`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -48,7 +49,7 @@ export function AccountControlPanel(): ReactNode {
     setLoading(true);
     setResult("Updating account control...");
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/account-control`, {
+      const response = await fetch(`${apiBaseUrl}/admin/account-control`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -9,12 +9,13 @@ type SyncResult = {
 };
 
 export async function syncOfflineEvents(accessToken: string): Promise<SyncResult[]> {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
   const events = await listOfflineEvents();
   if (events.length === 0) {
     return [];
   }
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/sync/batch`, {
+  const response = await fetch(`${apiBaseUrl}/sync/batch`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -34,4 +35,3 @@ export async function syncOfflineEvents(accessToken: string): Promise<SyncResult
   }
   return payload.results;
 }
-
